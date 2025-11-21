@@ -11,14 +11,14 @@ public class Place {
     private double lon;
     private double distanceKm;
     private IndoorOutdoorType indoorOutdoorType;
-    private List<Interest> categories = new ArrayList<>();
+    private List<String> categories = new ArrayList<>();
 
     public Place() {
     }
 
     public Place(String id, String name, String address,
                  double lat, double lon, double distanceKm,
-                 IndoorOutdoorType indoorOutdoorType, List<Interest> categories) {
+                 IndoorOutdoorType indoorOutdoorType, List<String> categories) {
         this.id = id;
         this.name = name;
         this.address = address;
@@ -54,8 +54,8 @@ public class Place {
         this.indoorOutdoorType = indoorOutdoorType;
     }
 
-    public List<Interest> getCategories() { return categories; }
-    public void setCategories(List<Interest> categories) {
+    public List<String> getCategories() { return categories; }
+    public void setCategories(List<String> categories) {
         this.categories = categories != null ? new ArrayList<>(categories) : new ArrayList<>();
     }
 

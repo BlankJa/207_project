@@ -12,6 +12,8 @@ import placefinder.interface_adapters.viewmodels.PlanDetailsViewModel;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.util.List;
+import java.util.Map;
 
 public class PlanDetailsPanel extends JPanel {
 
@@ -217,14 +219,24 @@ public class PlanDetailsPanel extends JPanel {
         dateLabel.setText("Date: " + currentPlan.getDate());
         locationLabel.setText("Location: " + currentPlan.getOriginAddress());
 
-        String interests;
-        if (currentPlan.getSnapshotInterests() == null ||
-                currentPlan.getSnapshotInterests().isEmpty()) {
-            interests = "(none)";
+        String categoriesStr;
+        Map<String, List<String>> snapshotCategories = currentPlan.getSnapshotCategories();
+        if (snapshotCategories == null || snapshotCategories.isEmpty()) {
+            categoriesStr = "(none)";
         } else {
-            interests = currentPlan.getSnapshotInterests().toString();
+            StringBuilder sb = new StringBuilder();
+            for (Map.Entry<String, List<String>> entry : snapshotCategories.entrySet()) {
+                if (sb.length() > 0) {
+                    sb.append(", ");
+                }
+                sb.append(entry.getKey());
+                if (entry.getValue() != null && !entry.getValue().isEmpty()) {
+                    sb.append(": ").append(String.join(", ", entry.getValue()));
+                }
+            }
+            categoriesStr = sb.toString();
         }
-        String prefs = "Radius " + currentPlan.getSnapshotRadiusKm() + " km; Interests: " + interests;
+        String prefs = "Radius " + currentPlan.getSnapshotRadiusKm() + " km; Categories: " + categoriesStr;
         prefsLabel.setText(prefs);
 
         StringBuilder sb = new StringBuilder();

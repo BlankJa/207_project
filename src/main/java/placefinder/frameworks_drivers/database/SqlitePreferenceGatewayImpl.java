@@ -1,56 +1,54 @@
 package placefinder.frameworks_drivers.database;
 
 import placefinder.entities.FavoriteLocation;
-import placefinder.entities.Interest;
 import placefinder.entities.PreferenceProfile;
 import placefinder.usecases.ports.PreferenceGateway;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class SqlitePreferenceGatewayImpl implements PreferenceGateway {
 
     @Override
     public PreferenceProfile loadForUser(int userId) throws Exception {
-        String sql = "SELECT radius_km, interests FROM preferences WHERE user_id = ?";
+        String sql = "SELECT radius_km, selected_categories FROM preferences WHERE user_id = ?";
         try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     double radius = rs.getDouble("radius_km");
-                    String interestsStr = rs.getString("interests");
-                    List<Interest> interests = parseInterests(interestsStr);
-                    return new PreferenceProfile(userId, radius, interests);
+                    String selectedCategoriesStr = rs.getString("selected_categories");
+                    Map<String, List<String>> selectedCategories = parseSelectedCategories(selectedCategoriesStr);
+                    return new PreferenceProfile(userId, radius, selectedCategories);
                 }
             }
         }
 
         // create default if not exists
-        PreferenceProfile profile = new PreferenceProfile(userId, 2.0, new ArrayList<>());
+        PreferenceProfile profile = new PreferenceProfile(userId, 2.0, new HashMap<>());
         saveForUser(profile);
         return profile;
     }
 
     @Override
     public void saveForUser(PreferenceProfile profile) throws Exception {
-        String update = "UPDATE preferences SET radius_km = ?, interests = ? WHERE user_id = ?";
-        String insert = "INSERT INTO preferences(user_id, radius_km, interests) VALUES (?, ?, ?)";
+        String update = "UPDATE preferences SET radius_km = ?, selected_categories = ? WHERE user_id = ?";
+        String insert = "INSERT INTO preferences(user_id, radius_km, selected_categories) VALUES (?, ?, ?)";
 
-        String interestsStr = serializeInterests(profile.getInterests());
+        String selectedCategoriesStr = serializeSelectedCategories(profile.getSelectedCategories());
         try (Connection conn = Database.getConnection()) {
             try (PreparedStatement ps = conn.prepareStatement(update)) {
                 ps.setDouble(1, profile.getRadiusKm());
-                ps.setString(2, interestsStr);
+                ps.setString(2, selectedCategoriesStr);
                 ps.setInt(3, profile.getUserId());
                 int updated = ps.executeUpdate();
                 if (updated == 0) {
                     try (PreparedStatement ins = conn.prepareStatement(insert)) {
                         ins.setInt(1, profile.getUserId());
                         ins.setDouble(2, profile.getRadiusKm());
-                        ins.setString(3, interestsStr);
+                        ins.setString(3, selectedCategoriesStr);
                         ins.executeUpdate();
                     }
                 }
@@ -113,30 +111,54 @@ public class SqlitePreferenceGatewayImpl implements PreferenceGateway {
         }
     }
 
-    private List<Interest> parseInterests(String interestsStr) {
-        List<Interest> result = new ArrayList<>();
-        if (interestsStr == null || interestsStr.isBlank()) {
+    /**
+     * Parse selectedCategories string
+     * Format: mainCategory1:subCategory1,subCategory2|mainCategory2:subCategory1,subCategory2
+     */
+    private Map<String, List<String>> parseSelectedCategories(String selectedCategoriesStr) {
+        Map<String, List<String>> result = new HashMap<>();
+        if (selectedCategoriesStr == null || selectedCategoriesStr.isBlank()) {
             return result;
         }
-        Arrays.stream(interestsStr.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .forEach(s -> {
-                    try {
-                        result.add(Interest.valueOf(s));
-                    } catch (IllegalArgumentException ignored) {
+        String[] mainCategories = selectedCategoriesStr.split("\\|");
+        for (String mainCatEntry : mainCategories) {
+            if (mainCatEntry.isEmpty()) continue;
+            String[] parts = mainCatEntry.split(":", 2);
+            if (parts.length == 2) {
+                String mainCategory = parts[0].trim();
+                String subCategoriesStr = parts[1].trim();
+                if (!mainCategory.isEmpty() && !subCategoriesStr.isEmpty()) {
+                    List<String> subCategories = Arrays.stream(subCategoriesStr.split(","))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .collect(Collectors.toList());
+                    if (!subCategories.isEmpty()) {
+                        result.put(mainCategory, subCategories);
                     }
-                });
+                }
+            }
+        }
         return result;
     }
 
-    private String serializeInterests(List<Interest> interests) {
-        if (interests == null || interests.isEmpty()) return "";
-        StringBuilder sb = new StringBuilder();
-        for (Interest i : interests) {
-            if (sb.length() > 0) sb.append(",");
-            sb.append(i.name());
+    /**
+     * Serialize selectedCategories to string
+     * Format: mainCategory1:subCategory1,subCategory2|mainCategory2:subCategory1,subCategory2
+     */
+    private String serializeSelectedCategories(Map<String, List<String>> selectedCategories) {
+        if (selectedCategories == null || selectedCategories.isEmpty()) {
+            return "";
         }
-        return sb.toString();
+        List<String> entries = new ArrayList<>();
+        for (Map.Entry<String, List<String>> entry : selectedCategories.entrySet()) {
+            String mainCategory = entry.getKey();
+            List<String> subCategories = entry.getValue();
+            if (mainCategory != null && !mainCategory.isEmpty() && 
+                subCategories != null && !subCategories.isEmpty()) {
+                String subCategoriesStr = String.join(",", subCategories);
+                entries.add(mainCategory + ":" + subCategoriesStr);
+            }
+        }
+        return String.join("|", entries);
     }
 }

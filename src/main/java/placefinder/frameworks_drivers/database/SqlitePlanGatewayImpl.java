@@ -6,9 +6,8 @@ import placefinder.usecases.ports.PlanGateway;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class SqlitePlanGatewayImpl implements PlanGateway {
 
@@ -26,7 +25,7 @@ public class SqlitePlanGatewayImpl implements PlanGateway {
 
     private void insertPlan(Plan plan) throws Exception {
         String sql = "INSERT INTO plans(user_id, name, date, start_time, origin_address, " +
-                "snapshot_radius_km, snapshot_interests) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                "snapshot_radius_km, snapshot_categories) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, plan.getUserId());
@@ -35,7 +34,7 @@ public class SqlitePlanGatewayImpl implements PlanGateway {
             ps.setString(4, plan.getStartTime().toString());
             ps.setString(5, plan.getOriginAddress());
             ps.setDouble(6, plan.getSnapshotRadiusKm());
-            ps.setString(7, serializeInterests(plan.getSnapshotInterests()));
+            ps.setString(7, serializeCategories(plan.getSnapshotCategories()));
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
@@ -47,7 +46,7 @@ public class SqlitePlanGatewayImpl implements PlanGateway {
 
     private void updatePlan(Plan plan) throws Exception {
         String sql = "UPDATE plans SET name = ?, date = ?, start_time = ?, origin_address = ?, " +
-                "snapshot_radius_km = ?, snapshot_interests = ? WHERE id = ? AND user_id = ?";
+                "snapshot_radius_km = ?, snapshot_categories = ? WHERE id = ? AND user_id = ?";
         try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, plan.getName());
@@ -55,7 +54,7 @@ public class SqlitePlanGatewayImpl implements PlanGateway {
             ps.setString(3, plan.getStartTime().toString());
             ps.setString(4, plan.getOriginAddress());
             ps.setDouble(5, plan.getSnapshotRadiusKm());
-            ps.setString(6, serializeInterests(plan.getSnapshotInterests()));
+            ps.setString(6, serializeCategories(plan.getSnapshotCategories()));
             ps.setInt(7, plan.getId());
             ps.setInt(8, plan.getUserId());
             ps.executeUpdate();
@@ -102,7 +101,7 @@ public class SqlitePlanGatewayImpl implements PlanGateway {
     @Override
     public List<Plan> findPlansByUser(int userId) throws Exception {
         String sql = "SELECT id, user_id, name, date, start_time, origin_address, " +
-                "snapshot_radius_km, snapshot_interests FROM plans WHERE user_id = ? ORDER BY date DESC, id DESC";
+                "snapshot_radius_km, snapshot_categories FROM plans WHERE user_id = ? ORDER BY date DESC, id DESC";
         List<Plan> list = new ArrayList<>();
         try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -113,8 +112,8 @@ public class SqlitePlanGatewayImpl implements PlanGateway {
                     LocalDate date = LocalDate.parse(rs.getString("date"));
                     LocalTime start = LocalTime.parse(rs.getString("start_time"));
                     double radius = rs.getDouble("snapshot_radius_km");
-                    String interestsStr = rs.getString("snapshot_interests");
-                    List<Interest> interests = parseInterests(interestsStr);
+                    String categoriesStr = rs.getString("snapshot_categories");
+                    Map<String, List<String>> categories = parseCategories(categoriesStr);
                     Plan plan = new Plan(
                             id,
                             rs.getInt("user_id"),
@@ -124,7 +123,7 @@ public class SqlitePlanGatewayImpl implements PlanGateway {
                             rs.getString("origin_address"),
                             null,
                             radius,
-                            interests
+                            categories
                     );
                     list.add(plan);
                 }
@@ -136,7 +135,7 @@ public class SqlitePlanGatewayImpl implements PlanGateway {
     @Override
     public Plan findPlanWithStops(int planId) throws Exception {
         String sql = "SELECT id, user_id, name, date, start_time, origin_address, " +
-                "snapshot_radius_km, snapshot_interests FROM plans WHERE id = ?";
+                "snapshot_radius_km, snapshot_categories FROM plans WHERE id = ?";
         try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, planId);
@@ -150,14 +149,14 @@ public class SqlitePlanGatewayImpl implements PlanGateway {
                 LocalTime start = LocalTime.parse(rs.getString("start_time"));
                 String originAddress = rs.getString("origin_address");
                 double radius = rs.getDouble("snapshot_radius_km");
-                String interestsStr = rs.getString("snapshot_interests");
-                List<Interest> interests = parseInterests(interestsStr);
+                String categoriesStr = rs.getString("snapshot_categories");
+                Map<String, List<String>> categories = parseCategories(categoriesStr);
 
                 List<PlanStop> stops = loadStopsForPlan(conn, id);
                 Route route = new Route(stops);
 
                 return new Plan(id, userId, rs.getString("name"),
-                        date, start, originAddress, route, radius, interests);
+                        date, start, originAddress, route, radius, categories);
             }
         }
     }
@@ -207,30 +206,54 @@ public class SqlitePlanGatewayImpl implements PlanGateway {
         }
     }
 
-    private List<Interest> parseInterests(String interestsStr) {
-        List<Interest> result = new ArrayList<>();
-        if (interestsStr == null || interestsStr.isBlank()) {
+    /**
+     * Parse categories string
+     * Format: mainCategory1:subCategory1,subCategory2|mainCategory2:subCategory1,subCategory2
+     */
+    private Map<String, List<String>> parseCategories(String categoriesStr) {
+        Map<String, List<String>> result = new HashMap<>();
+        if (categoriesStr == null || categoriesStr.isBlank()) {
             return result;
         }
-        Arrays.stream(interestsStr.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .forEach(s -> {
-                    try {
-                        result.add(Interest.valueOf(s));
-                    } catch (IllegalArgumentException ignored) {
+        String[] mainCategories = categoriesStr.split("\\|");
+        for (String mainCatEntry : mainCategories) {
+            if (mainCatEntry.isEmpty()) continue;
+            String[] parts = mainCatEntry.split(":", 2);
+            if (parts.length == 2) {
+                String mainCategory = parts[0].trim();
+                String subCategoriesStr = parts[1].trim();
+                if (!mainCategory.isEmpty() && !subCategoriesStr.isEmpty()) {
+                    List<String> subCategories = Arrays.stream(subCategoriesStr.split(","))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .collect(Collectors.toList());
+                    if (!subCategories.isEmpty()) {
+                        result.put(mainCategory, subCategories);
                     }
-                });
+                }
+            }
+        }
         return result;
     }
 
-    private String serializeInterests(List<Interest> interests) {
-        if (interests == null || interests.isEmpty()) return "";
-        StringBuilder sb = new StringBuilder();
-        for (Interest i : interests) {
-            if (sb.length() > 0) sb.append(",");
-            sb.append(i.name());
+    /**
+     * Serialize categories to string
+     * Format: mainCategory1:subCategory1,subCategory2|mainCategory2:subCategory1,subCategory2
+     */
+    private String serializeCategories(Map<String, List<String>> categories) {
+        if (categories == null || categories.isEmpty()) {
+            return "";
         }
-        return sb.toString();
+        List<String> entries = new ArrayList<>();
+        for (Map.Entry<String, List<String>> entry : categories.entrySet()) {
+            String mainCategory = entry.getKey();
+            List<String> subCategories = entry.getValue();
+            if (mainCategory != null && !mainCategory.isEmpty() && 
+                subCategories != null && !subCategories.isEmpty()) {
+                String subCategoriesStr = String.join(",", subCategories);
+                entries.add(mainCategory + ":" + subCategoriesStr);
+            }
+        }
+        return String.join("|", entries);
     }
 }

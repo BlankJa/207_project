@@ -7,8 +7,8 @@ import placefinder.usecases.ports.PreferenceGateway;
 import placefinder.usecases.ports.WeatherGateway;
 
 import java.time.LocalDate;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class SearchPlacesInteractor implements SearchPlacesInputBoundary {
 
@@ -53,10 +53,10 @@ public class SearchPlacesInteractor implements SearchPlacesInputBoundary {
             }
 
             List<Place> places = placesGateway.searchPlaces(
-                    geo.getLat(), geo.getLon(), profile.getRadiusKm(), profile.getInterests()
+                    geo.getLat(), geo.getLon(), profile.getRadiusKm(), profile.getSelectedCategories()
             );
 
-            rankPlaces(places, profile.getInterests(), weather);
+            rankPlaces(places, profile.getSelectedCategories(), weather);
             presenter.present(new SearchPlacesOutputData(
                     places,
                     geo.getFormattedAddress(),
@@ -70,17 +70,25 @@ public class SearchPlacesInteractor implements SearchPlacesInputBoundary {
         }
     }
 
-    private void rankPlaces(List<Place> places, List<Interest> interests, WeatherSummary weather) {
+    private void rankPlaces(List<Place> places, Map<String, List<String>> selectedCategories, WeatherSummary weather) {
         boolean wet = weather != null && weather.isPrecipitationLikely();
-        places.sort(Comparator.comparingDouble((Place p) -> -scorePlace(p, interests, wet)));
+        places.sort(Comparator.comparingDouble((Place p) -> -scorePlace(p, selectedCategories, wet)));
     }
 
-    private double scorePlace(Place place, List<Interest> interests, boolean wet) {
+    private double scorePlace(Place place, Map<String, List<String>> selectedCategories, boolean wet) {
         double score = 0;
-        if (interests != null) {
-            for (Interest i : interests) {
-                if (place.getCategories().contains(i)) {
-                    score += 10;
+        if (selectedCategories != null && !selectedCategories.isEmpty()) {
+            List<String> selectedSubCategories = selectedCategories.values().stream()
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+            
+            List<String> placeCategories = place.getCategories();
+            for (String selectedCategory : selectedSubCategories) {
+                for (String placeCategory : placeCategories) {
+                    if (placeCategory.equals(selectedCategory) || placeCategory.startsWith(selectedCategory)) {
+                        score += 10;
+                        break;
+                    }
                 }
             }
         }

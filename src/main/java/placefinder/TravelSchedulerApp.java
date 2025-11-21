@@ -114,7 +114,7 @@ public class TravelSchedulerApp {
                     return;
                 }
                 preferencesVM.setRadiusKm(outputData.getRadiusKm());
-                preferencesVM.setInterests(outputData.getInterests());
+                preferencesVM.setSelectedCategories(outputData.getSelectedCategories());
                 preferencesVM.setFavorites(outputData.getFavorites());
             }
         };

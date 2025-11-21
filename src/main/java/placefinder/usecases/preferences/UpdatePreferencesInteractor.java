@@ -3,7 +3,9 @@ package placefinder.usecases.preferences;
 import placefinder.entities.PreferenceProfile;
 import placefinder.usecases.ports.PreferenceGateway;
 
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class UpdatePreferencesInteractor implements UpdatePreferencesInputBoundary {
 
@@ -19,19 +21,35 @@ public class UpdatePreferencesInteractor implements UpdatePreferencesInputBounda
     @Override
     public void execute(UpdatePreferencesInputData inputData) {
         try {
-            if (inputData.getInterests().size() > 3) {
-                presenter.present(new UpdatePreferencesOutputData(false,
-                        "You can select at most 3 interests."));
-                return;
-            }
             if (inputData.getRadiusKm() < 0 || inputData.getRadiusKm() > 5) {
                 presenter.present(new UpdatePreferencesOutputData(false,
                         "Radius must be between 0 and 5 km."));
                 return;
             }
+            
+            Map<String, List<String>> selectedCategories = inputData.getSelectedCategories();
+            int totalSubCategories = 0;
+            if (selectedCategories != null) {
+                for (List<String> subCategories : selectedCategories.values()) {
+                    if (subCategories != null) {
+                        totalSubCategories += subCategories.size();
+                    }
+                }
+            }
+            
+            if (totalSubCategories < 3) {
+                presenter.present(new UpdatePreferencesOutputData(false,
+                        "Please select at least 3 sub-categories."));
+                return;
+            }
+            
             PreferenceProfile profile = preferenceGateway.loadForUser(inputData.getUserId());
             profile.setRadiusKm(inputData.getRadiusKm());
-            profile.setInterests(new ArrayList<>(inputData.getInterests()));
+            if (selectedCategories != null) {
+                profile.setSelectedCategories(new HashMap<>(selectedCategories));
+            } else {
+                profile.setSelectedCategories(new HashMap<>());
+            }
             preferenceGateway.saveForUser(profile);
             presenter.present(new UpdatePreferencesOutputData(true, "Preferences saved."));
         } catch (Exception e) {

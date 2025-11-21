@@ -21,15 +21,15 @@ public class GetPreferencesInteractor implements GetPreferencesInputBoundary {
             var favorites = preferenceGateway.listFavorites(inputData.getUserId());
             presenter.present(new GetPreferencesOutputData(
                     profile.getRadiusKm(),
-                    profile.getInterests(),
                     favorites,
+                    profile.getSelectedCategories(),
                     null
             ));
         } catch (Exception e) {
             presenter.present(new GetPreferencesOutputData(
                     2.0,
                     java.util.List.of(),
-                    java.util.List.of(),
+                    null,
                     e.getMessage()
             ));
         }

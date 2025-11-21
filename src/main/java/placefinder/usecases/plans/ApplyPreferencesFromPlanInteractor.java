@@ -29,7 +29,7 @@ public class ApplyPreferencesFromPlanInteractor implements ApplyPreferencesFromP
             }
             PreferenceProfile profile = preferenceGateway.loadForUser(inputData.getUserId());
             profile.setRadiusKm(plan.getSnapshotRadiusKm());
-            profile.setInterests(new java.util.ArrayList<>(plan.getSnapshotInterests()));
+            profile.setSelectedCategories(plan.getSnapshotCategories());
             preferenceGateway.saveForUser(profile);
             presenter.present(new ApplyPreferencesFromPlanOutputData(true,
                     "Preferences updated from plan."));

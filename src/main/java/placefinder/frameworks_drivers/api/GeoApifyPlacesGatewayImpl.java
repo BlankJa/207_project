@@ -5,14 +5,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import placefinder.entities.IndoorOutdoorType;
-import placefinder.entities.Interest;
 import placefinder.entities.Place;
 import placefinder.usecases.ports.PlacesGateway;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class GeoApifyPlacesGatewayImpl implements PlacesGateway {
@@ -29,10 +25,10 @@ public class GeoApifyPlacesGatewayImpl implements PlacesGateway {
 
     @Override
     public List<Place> searchPlaces(double lat, double lon, double radiusKm,
-                                    List<Interest> interests) throws Exception {
+                                    Map<String, List<String>> selectedCategories) throws Exception {
 
         double radiusMeters = radiusKm * 1000.0;
-        String categoriesParam = buildCategoriesParam(interests);
+        String categoriesParam = buildCategoriesParam(selectedCategories);
 
         String url = "https://api.geoapify.com/v2/places?categories=" + categoriesParam +
                 "&filter=circle:" + lon + "," + lat + "," + (int) radiusMeters +
@@ -70,7 +66,6 @@ public class GeoApifyPlacesGatewayImpl implements PlacesGateway {
                 catStrings.add(props.get("category").getAsString());
             }
 
-            List<Interest> mappedInterests = mapCategoriesToInterests(catStrings);
             IndoorOutdoorType type = classifyIndoorOutdoor(catStrings);
 
             Place place = new Place();
@@ -81,63 +76,27 @@ public class GeoApifyPlacesGatewayImpl implements PlacesGateway {
             place.setLon(plon);
             place.setDistanceKm(distanceKm);
             place.setIndoorOutdoorType(type);
-            place.setCategories(mappedInterests);
+            place.setCategories(catStrings);
             places.add(place);
         }
 
         return places;
     }
 
-    private String buildCategoriesParam(List<Interest> interests) {
-        if (interests == null || interests.isEmpty()) {
+    private String buildCategoriesParam(Map<String, List<String>> selectedCategories) {
+        if (selectedCategories == null || selectedCategories.isEmpty()) {
             return "tourism.sights,entertainment,leisure.park,catering";
         }
-        List<String> list = new ArrayList<>();
-        for (Interest i : interests) {
-            switch (i) {
-                case MUSEUM -> list.add("entertainment.museum");
-                case CAFE -> list.add("catering.cafe");
-                case PARK -> list.add("leisure.park");
-                case SHOPPING -> {
-                    list.add("commercial.shopping_mall");
-                    list.add("commercial.marketplace");
-                }
-                case RESTAURANT -> list.add("catering.restaurant");
-                case BAR -> list.add("catering.bar");
-                case SIGHTSEEING -> list.add("tourism.sights");
-                default -> list.add("tourism");
-            }
+        List<String> allCategories = selectedCategories.values().stream()
+                .flatMap(List::stream)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        if (allCategories.isEmpty()) {
+            return "tourism.sights,entertainment,leisure.park,catering";
         }
-        return list.stream().distinct().collect(Collectors.joining(","));
-    }
-
-    private List<Interest> mapCategoriesToInterests(List<String> catStrings) {
-        Set<Interest> set = new HashSet<>();
-        for (String c : catStrings) {
-            if (c.startsWith("entertainment.museum")) {
-                set.add(Interest.MUSEUM);
-            }
-            if (c.startsWith("catering.cafe")) {
-                set.add(Interest.CAFE);
-            }
-            if (c.startsWith("leisure.park")) {
-                set.add(Interest.PARK);
-            }
-            if (c.startsWith("commercial.shopping_mall") ||
-                c.startsWith("commercial.marketplace")) {
-                set.add(Interest.SHOPPING);
-            }
-            if (c.startsWith("catering.restaurant")) {
-                set.add(Interest.RESTAURANT);
-            }
-            if (c.startsWith("catering.bar") || c.startsWith("catering.pub")) {
-                set.add(Interest.BAR);
-            }
-            if (c.startsWith("tourism.sights") || c.startsWith("tourism.attraction")) {
-                set.add(Interest.SIGHTSEEING);
-            }
-        }
-        return new ArrayList<>(set);
+        
+        return String.join(",", allCategories);
     }
 
     private IndoorOutdoorType classifyIndoorOutdoor(List<String> catStrings) {

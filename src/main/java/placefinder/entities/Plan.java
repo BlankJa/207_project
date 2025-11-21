@@ -2,8 +2,9 @@ package placefinder.entities;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Plan {
     private Integer id;
@@ -14,12 +15,12 @@ public class Plan {
     private String originAddress;
     private Route route;
     private double snapshotRadiusKm;
-    private List<Interest> snapshotInterests = new ArrayList<>();
+    private Map<String, List<String>> snapshotCategories = new HashMap<>();
 
     public Plan(Integer id, int userId, String name,
                 LocalDate date, LocalTime startTime,
                 String originAddress, Route route,
-                double snapshotRadiusKm, List<Interest> snapshotInterests) {
+                double snapshotRadiusKm, Map<String, List<String>> snapshotCategories) {
         this.id = id;
         this.userId = userId;
         this.name = name;
@@ -28,8 +29,8 @@ public class Plan {
         this.originAddress = originAddress;
         this.route = route;
         this.snapshotRadiusKm = snapshotRadiusKm;
-        if (snapshotInterests != null) {
-            this.snapshotInterests = new ArrayList<>(snapshotInterests);
+        if (snapshotCategories != null) {
+            this.snapshotCategories = new HashMap<>(snapshotCategories);
         }
     }
 
@@ -57,9 +58,12 @@ public class Plan {
     public double getSnapshotRadiusKm() { return snapshotRadiusKm; }
     public void setSnapshotRadiusKm(double snapshotRadiusKm) { this.snapshotRadiusKm = snapshotRadiusKm; }
 
-    public List<Interest> getSnapshotInterests() { return snapshotInterests; }
-    public void setSnapshotInterests(List<Interest> snapshotInterests) {
-        this.snapshotInterests = snapshotInterests != null
-                ? new ArrayList<>(snapshotInterests) : new ArrayList<>();
+    public Map<String, List<String>> getSnapshotCategories() {
+        return new HashMap<>(snapshotCategories);
+    }
+    
+    public void setSnapshotCategories(Map<String, List<String>> snapshotCategories) {
+        this.snapshotCategories = snapshotCategories != null
+                ? new HashMap<>(snapshotCategories) : new HashMap<>();
     }
 }

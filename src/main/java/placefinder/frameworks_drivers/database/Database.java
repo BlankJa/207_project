@@ -34,9 +34,15 @@ public class Database {
             stmt.execute("CREATE TABLE IF NOT EXISTS preferences (" +
                     "user_id INTEGER PRIMARY KEY," +
                     "radius_km REAL NOT NULL DEFAULT 2.0," +
-                    "interests TEXT," +
+                    "selected_categories TEXT," +
                     "FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE" +
                     ")");
+            
+            try {
+                stmt.execute("ALTER TABLE preferences ADD COLUMN selected_categories TEXT");
+            } catch (SQLException e) {
+                // Column already exists, ignore
+            }
 
             stmt.execute("CREATE TABLE IF NOT EXISTS favorite_locations (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -56,9 +62,15 @@ public class Database {
                     "start_time TEXT NOT NULL," +
                     "origin_address TEXT NOT NULL," +
                     "snapshot_radius_km REAL NOT NULL," +
-                    "snapshot_interests TEXT," +
+                    "snapshot_categories TEXT," +
                     "FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE" +
                     ")");
+            
+            try {
+                stmt.execute("ALTER TABLE plans ADD COLUMN snapshot_categories TEXT");
+            } catch (SQLException e) {
+                // Column already exists, ignore
+            }
 
             stmt.execute("CREATE TABLE IF NOT EXISTS plan_stops (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +

@@ -1,11 +1,11 @@
 package placefinder.interface_adapters.controllers;
 
 import placefinder.entities.FavoriteLocation;
-import placefinder.entities.Interest;
 import placefinder.interface_adapters.viewmodels.PreferencesViewModel;
 import placefinder.usecases.preferences.*;
 
 import java.util.List;
+import java.util.Map;
 
 public class PreferencesController implements
         GetPreferencesOutputBoundary,
@@ -38,10 +38,11 @@ public class PreferencesController implements
         getPreferencesInteractor.execute(new GetPreferencesInputData(userId));
     }
 
-    public void savePreferences(int userId, double radiusKm, List<Interest> interests) {
+    public void savePreferences(int userId, double radiusKm,
+                                Map<String, List<String>> selectedCategories) {
         viewModel.setErrorMessage(null);
         viewModel.setMessage(null);
-        updatePreferencesInteractor.execute(new UpdatePreferencesInputData(userId, radiusKm, interests));
+        updatePreferencesInteractor.execute(new UpdatePreferencesInputData(userId, radiusKm, selectedCategories));
     }
 
     public void addFavorite(int userId, String name, String address) {
@@ -61,8 +62,8 @@ public class PreferencesController implements
             return;
         }
         viewModel.setRadiusKm(outputData.getRadiusKm());
-        viewModel.setInterests(outputData.getInterests());
         viewModel.setFavorites(outputData.getFavorites());
+        viewModel.setSelectedCategories(outputData.getSelectedCategories());
     }
 
     @Override

@@ -3,15 +3,15 @@ package placefinder.frameworks_drivers.ui.frames;
 import com.raven.swing.Button;
 import com.raven.swing.MyTextField;
 import com.raven.swing.PanelRound;
+import placefinder.entities.DayTripExperienceCategories;
 import placefinder.entities.FavoriteLocation;
-import placefinder.entities.Interest;
 import placefinder.interface_adapters.controllers.PreferencesController;
 import placefinder.interface_adapters.viewmodels.PreferencesViewModel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
 
 public class PreferencesPanel extends JPanel {
@@ -21,7 +21,10 @@ public class PreferencesPanel extends JPanel {
     private final PreferencesViewModel preferencesVM;
 
     private JSpinner radiusSpinner;
-    private JCheckBox[] interestCheckboxes;
+    private JComboBox<String> mainCategoryCombo;
+    private JPanel subCategoriesPanel;
+    private Map<String, Map<String, JCheckBox>> subCategoryCheckboxes = new HashMap<>();
+    private Map<String, List<String>> currentSelectedCategories = new HashMap<>();
     private DefaultListModel<FavoriteLocation> favListModel;
     private JList<FavoriteLocation> favList;
     private MyTextField favNameField;
@@ -128,27 +131,45 @@ public class PreferencesPanel extends JPanel {
         left.add(radiusSpinner);
         left.add(Box.createVerticalStrut(20));
 
-        JLabel interestsLabel = new JLabel("Interests (max 3, can be 0)");
-        interestsLabel.setFont(new Font("sansserif", Font.BOLD, 13));
-        interestsLabel.setForeground(new Color(70, 70, 70));
-        left.add(interestsLabel);
+        // --- Categories selection ---
+        JLabel categoriesLabel = new JLabel("Categories (at least 3 sub-categories required)");
+        categoriesLabel.setFont(new Font("sansserif", Font.BOLD, 13));
+        categoriesLabel.setForeground(new Color(70, 70, 70));
+        left.add(categoriesLabel);
         left.add(Box.createVerticalStrut(5));
 
-        JPanel interestsPanel = new JPanel(new GridLayout(0, 2, 6, 4));
-        interestsPanel.setOpaque(false);
-        Interest[] allInterests = Interest.values();
-        interestCheckboxes = new JCheckBox[allInterests.length];
-        for (int i = 0; i < allInterests.length; i++) {
-            JCheckBox cb = new JCheckBox(allInterests[i].name());
-            cb.setOpaque(false);
-            cb.setFont(new Font("sansserif", Font.PLAIN, 12));
-            cb.setForeground(new Color(60, 60, 60));
-            interestCheckboxes[i] = cb;
-            interestsPanel.add(cb);
-        }
-        JScrollPane interestScroll = new JScrollPane(interestsPanel);
-        interestScroll.setBorder(BorderFactory.createEmptyBorder());
-        left.add(interestScroll);
+        JLabel categoryHint = new JLabel("Select a main category, then choose sub-categories");
+        categoryHint.setFont(new Font("sansserif", Font.PLAIN, 11));
+        categoryHint.setForeground(new Color(140, 140, 140));
+        left.add(categoryHint);
+        left.add(Box.createVerticalStrut(5));
+
+        List<String> mainCategories = DayTripExperienceCategories.getMainCategories();
+        mainCategoryCombo = new JComboBox<>(mainCategories.toArray(new String[0]));
+        mainCategoryCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                String displayName = "";
+                if (value != null) {
+                    String category = (String) value;
+                    displayName = DayTripExperienceCategories.getDisplayName(category);
+                }
+                return super.getListCellRendererComponent(list, displayName, index, isSelected, cellHasFocus);
+            }
+        });
+        mainCategoryCombo.setSelectedIndex(-1);
+        mainCategoryCombo.addActionListener(e -> updateSubCategoriesPanel());
+        left.add(mainCategoryCombo);
+        left.add(Box.createVerticalStrut(8));
+
+        subCategoriesPanel = new JPanel();
+        subCategoriesPanel.setLayout(new BoxLayout(subCategoriesPanel, BoxLayout.Y_AXIS));
+        subCategoriesPanel.setOpaque(false);
+        JScrollPane subCategoriesScroll = new JScrollPane(subCategoriesPanel);
+        subCategoriesScroll.setBorder(BorderFactory.createEmptyBorder());
+        subCategoriesScroll.setPreferredSize(new Dimension(0, 150));
+        left.add(subCategoriesScroll);
 
         left.add(Box.createVerticalStrut(15));
 
@@ -245,22 +266,25 @@ public class PreferencesPanel extends JPanel {
         // radius
         radiusSpinner.setValue(preferencesVM.getRadiusKm());
 
-        // interests
-        List<Interest> selected = preferencesVM.getInterests();
-        if (selected == null) {
-            selected = new ArrayList<>();
-        }
-        for (int i = 0; i < interestCheckboxes.length; i++) {
-            Interest interest = Interest.values()[i];
-            interestCheckboxes[i].setSelected(selected.contains(interest));
-        }
-
         // favorite locations
         favListModel.clear();
         if (preferencesVM.getFavorites() != null) {
             for (FavoriteLocation fav : preferencesVM.getFavorites()) {
                 favListModel.addElement(fav);
             }
+        }
+
+        // categories
+        Map<String, List<String>> savedCategories = preferencesVM.getSelectedCategories();
+        subCategoryCheckboxes.clear();
+        currentSelectedCategories = new HashMap<>(savedCategories != null ? savedCategories : new HashMap<>());
+        mainCategoryCombo.setSelectedIndex(-1);
+        if (savedCategories != null && !savedCategories.isEmpty()) {
+            String firstMainCategory = savedCategories.keySet().iterator().next();
+            mainCategoryCombo.setSelectedItem(firstMainCategory);
+            updateSubCategoriesPanel();
+        } else {
+            updateSubCategoriesPanel();
         }
 
         String msg = preferencesVM.getErrorMessage() != null
@@ -271,20 +295,95 @@ public class PreferencesPanel extends JPanel {
 
     // ===== Internal helpers =====
 
+    private void updateSubCategoriesPanel() {
+        saveCurrentMainCategorySelection();
+        
+        subCategoriesPanel.removeAll();
+        String selectedMainCategory = (String) mainCategoryCombo.getSelectedItem();
+        if (selectedMainCategory == null) {
+            subCategoriesPanel.revalidate();
+            subCategoriesPanel.repaint();
+            return;
+        }
+
+        List<String> subCategories = DayTripExperienceCategories.getSubCategories(selectedMainCategory);
+        Map<String, JCheckBox> checkboxes = new HashMap<>();
+        
+        for (String subCategory : subCategories) {
+            JCheckBox cb = new JCheckBox(formatSubCategoryName(subCategory));
+            cb.setOpaque(false);
+            cb.setFont(new Font("sansserif", Font.PLAIN, 11));
+            cb.setForeground(new Color(60, 60, 60));
+            
+            boolean isSelected = false;
+            if (currentSelectedCategories.containsKey(selectedMainCategory)) {
+                List<String> selectedSubs = currentSelectedCategories.get(selectedMainCategory);
+                isSelected = selectedSubs != null && selectedSubs.contains(subCategory);
+            } else {
+                Map<String, List<String>> savedCategories = preferencesVM.getSelectedCategories();
+                if (savedCategories != null && savedCategories.containsKey(selectedMainCategory)) {
+                    List<String> selectedSubs = savedCategories.get(selectedMainCategory);
+                    isSelected = selectedSubs != null && selectedSubs.contains(subCategory);
+                }
+            }
+            
+            cb.setSelected(isSelected);
+            
+            checkboxes.put(subCategory, cb);
+            subCategoriesPanel.add(cb);
+        }
+        
+        subCategoryCheckboxes.put(selectedMainCategory, checkboxes);
+        subCategoriesPanel.revalidate();
+        subCategoriesPanel.repaint();
+    }
+
+    private void saveCurrentMainCategorySelection() {
+        String currentMainCategory = (String) mainCategoryCombo.getSelectedItem();
+        if (currentMainCategory != null && subCategoryCheckboxes.containsKey(currentMainCategory)) {
+            List<String> selectedSubs = new ArrayList<>();
+            Map<String, JCheckBox> checkboxes = subCategoryCheckboxes.get(currentMainCategory);
+            for (Map.Entry<String, JCheckBox> entry : checkboxes.entrySet()) {
+                if (entry.getValue().isSelected()) {
+                    selectedSubs.add(entry.getKey());
+                }
+            }
+            if (!selectedSubs.isEmpty()) {
+                currentSelectedCategories.put(currentMainCategory, selectedSubs);
+            } else {
+                currentSelectedCategories.remove(currentMainCategory);
+            }
+        }
+    }
+
+    private String formatSubCategoryName(String subCategory) {
+        if (subCategory == null || subCategory.isEmpty()) {
+            return subCategory;
+        }
+        String[] parts = subCategory.split("\\.");
+        if (parts.length > 0) {
+            String lastPart = parts[parts.length - 1];
+            String formatted = lastPart.replace("_", " ");
+            if (!formatted.isEmpty()) {
+                formatted = Character.toUpperCase(formatted.charAt(0)) + 
+                           (formatted.length() > 1 ? formatted.substring(1) : "");
+            }
+            return formatted;
+        }
+        return subCategory;
+    }
+
     private void savePreferences() {
         Integer userId = appFrame.getCurrentUserId();
         if (userId == null) return;
 
         double radius = ((Number) radiusSpinner.getValue()).doubleValue();
 
-        List<Interest> selected = new ArrayList<>();
-        for (int i = 0; i < interestCheckboxes.length; i++) {
-            if (interestCheckboxes[i].isSelected()) {
-                selected.add(Interest.values()[i]);
-            }
-        }
+        saveCurrentMainCategorySelection();
+        
+        Map<String, List<String>> selectedCategories = new HashMap<>(currentSelectedCategories);
 
-        preferencesController.savePreferences(userId, radius, selected);
+        preferencesController.savePreferences(userId, radius, selectedCategories);
 
         if (preferencesVM.getErrorMessage() != null) {
             JOptionPane.showMessageDialog(this,

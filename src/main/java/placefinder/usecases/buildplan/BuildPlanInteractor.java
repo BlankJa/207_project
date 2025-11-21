@@ -67,7 +67,7 @@ public class BuildPlanInteractor implements BuildPlanInputBoundary {
                     geo.getFormattedAddress(),
                     route,
                     profile.getRadiusKm(),
-                    new ArrayList<>(profile.getInterests())
+                    profile.getSelectedCategories()
             );
             presenter.present(new BuildPlanOutputData(plan, truncated, null));
         } catch (Exception e) {

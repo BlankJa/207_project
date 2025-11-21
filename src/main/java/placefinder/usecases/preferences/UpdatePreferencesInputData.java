@@ -1,20 +1,21 @@
 package placefinder.usecases.preferences;
 
-import placefinder.entities.Interest;
+import java.util.Map;
 import java.util.List;
 
 public class UpdatePreferencesInputData {
     private final int userId;
     private final double radiusKm;
-    private final List<Interest> interests;
+    private final Map<String, List<String>> selectedCategories;
 
-    public UpdatePreferencesInputData(int userId, double radiusKm, List<Interest> interests) {
+    public UpdatePreferencesInputData(int userId, double radiusKm,
+                                      Map<String, List<String>> selectedCategories) {
         this.userId = userId;
         this.radiusKm = radiusKm;
-        this.interests = interests;
+        this.selectedCategories = selectedCategories;
     }
 
     public int getUserId() { return userId; }
     public double getRadiusKm() { return radiusKm; }
-    public List<Interest> getInterests() { return interests; }
+    public Map<String, List<String>> getSelectedCategories() { return selectedCategories; }
 }

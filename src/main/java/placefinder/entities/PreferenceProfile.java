@@ -1,18 +1,25 @@
 package placefinder.entities;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PreferenceProfile {
     private int userId;
     private double radiusKm;
-    private List<Interest> interests = new ArrayList<>();
+    private Map<String, List<String>> selectedCategories = new HashMap<>();
 
-    public PreferenceProfile(int userId, double radiusKm, List<Interest> interests) {
+    public PreferenceProfile(int userId, double radiusKm) {
         this.userId = userId;
         this.radiusKm = radiusKm;
-        if (interests != null) {
-            this.interests = new ArrayList<>(interests);
+    }
+
+    public PreferenceProfile(int userId, double radiusKm, 
+                             Map<String, List<String>> selectedCategories) {
+        this.userId = userId;
+        this.radiusKm = radiusKm;
+        if (selectedCategories != null) {
+            this.selectedCategories = new HashMap<>(selectedCategories);
         }
     }
 
@@ -22,8 +29,13 @@ public class PreferenceProfile {
     public double getRadiusKm() { return radiusKm; }
     public void setRadiusKm(double radiusKm) { this.radiusKm = radiusKm; }
 
-    public List<Interest> getInterests() { return interests; }
-    public void setInterests(List<Interest> interests) {
-        this.interests = interests != null ? new ArrayList<>(interests) : new ArrayList<>();
+    public Map<String, List<String>> getSelectedCategories() { 
+        return new HashMap<>(selectedCategories);
+    }
+    
+    public void setSelectedCategories(Map<String, List<String>> selectedCategories) {
+        this.selectedCategories = selectedCategories != null 
+            ? new HashMap<>(selectedCategories) 
+            : new HashMap<>();
     }
 }
