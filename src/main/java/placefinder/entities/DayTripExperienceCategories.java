@@ -48,13 +48,13 @@ public class DayTripExperienceCategories {
         CATEGORY_HIERARCHY.put("culture_history_and_arts", Arrays.asList(
                 "entertainment.museum",
                 "entertainment.culture",
-                "entertainment.culture.art_gallery",
+                "entertainment.culture.gallery",
                 "entertainment.culture.theatre",
                 "entertainment.culture.cinema",
                 "entertainment.culture.arts_centre",
                 "entertainment.culture.planetarium",
                 "commercial.art",
-                "commercial.antique"
+                "commercial.antiques"
         ));
 
         // Nature, Parks and Outdoors
@@ -171,9 +171,9 @@ public class DayTripExperienceCategories {
 
         // Nightlife and Adult
         CATEGORY_HIERARCHY.put("nightlife_and_adult", Arrays.asList(
-                "entertainment.casino",
-                "activity.club",
-                "catering.bar.dance"
+                "adult.casino",
+                "adult.nightclub",
+                "catering.bar"
         ));
     }
 

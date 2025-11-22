@@ -52,9 +52,25 @@ public class SearchPlacesInteractor implements SearchPlacesInputBoundary {
                 weatherUsed = false;
             }
 
-            List<Place> places = placesGateway.searchPlaces(
-                    geo.getLat(), geo.getLon(), profile.getRadiusKm(), profile.getSelectedCategories()
-            );
+//            List<Place> places = placesGateway.searchPlaces(
+//                    geo.getLat(), geo.getLon(), profile.getRadiusKm(), profile.getSelectedCategories()
+//            );
+            List<Place> places = new ArrayList<>();
+            for (Map.Entry<String, List<String>> entry : profile.getSelectedCategories().entrySet()) {
+                Map<String, List<String>> singleInterestMap = Map.of(entry.getKey(), entry.getValue());
+                List<Place> result = placesGateway.searchPlaces(
+                        geo.getLat(), geo.getLon(), profile.getRadiusKm(), singleInterestMap
+                );
+
+                if (result.isEmpty()) {
+                    presenter.present(new SearchPlacesOutputData(
+                            List.of(), geo.getFormattedAddress(), false,
+                            "No " + entry.getKey().toLowerCase() + "s found near this location."
+                    ));
+                    continue;
+                }
+                places.addAll(result.stream().limit(5).toList());
+            }
 
             rankPlaces(places, profile.getSelectedCategories(), weather);
             presenter.present(new SearchPlacesOutputData(

@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import placefinder.entities.DayTripExperienceCategories;
 import placefinder.entities.IndoorOutdoorType;
 import placefinder.entities.Place;
 import placefinder.usecases.ports.PlacesGateway;
@@ -46,17 +47,6 @@ public class GeoApifyPlacesGatewayImpl implements PlacesGateway {
             JsonObject props = feature.getAsJsonObject("properties");
             if (props == null) continue;
 
-            String id = props.has("place_id") ? props.get("place_id").getAsString() : null;
-            String name = props.has("name") ? props.get("name").getAsString() : "(no name)";
-            String address = props.has("formatted") ? props.get("formatted").getAsString() : "";
-            double plat = props.has("lat") ? props.get("lat").getAsDouble()
-                    : feature.getAsJsonObject("geometry")
-                            .getAsJsonArray("coordinates").get(1).getAsDouble();
-            double plon = props.has("lon") ? props.get("lon").getAsDouble()
-                    : feature.getAsJsonObject("geometry")
-                            .getAsJsonArray("coordinates").get(0).getAsDouble();
-            double distanceKm = props.has("distance") ? props.get("distance").getAsDouble() / 1000.0 : 0.0;
-
             List<String> catStrings = new ArrayList<>();
             if (props.has("categories") && props.get("categories").isJsonArray()) {
                 for (JsonElement c : props.getAsJsonArray("categories")) {
@@ -65,6 +55,31 @@ public class GeoApifyPlacesGatewayImpl implements PlacesGateway {
             } else if (props.has("category")) {
                 catStrings.add(props.get("category").getAsString());
             }
+
+            String id = props.has("place_id") ? props.get("place_id").getAsString() : null;
+            String rawName = props.has("name") ? props.get("name").getAsString() : null;
+            String name;
+            if (rawName == null || rawName.trim().isEmpty()) {
+                if (!catStrings.isEmpty())
+                {
+                    name = DayTripExperienceCategories.getDisplayName(catStrings.get(0));
+                }
+                else
+                {
+                    name = "(unknown)";
+                }
+            }
+            else {
+                name = rawName;
+            }
+            String address = props.has("formatted") ? props.get("formatted").getAsString() : "";
+            double plat = props.has("lat") ? props.get("lat").getAsDouble()
+                    : feature.getAsJsonObject("geometry")
+                            .getAsJsonArray("coordinates").get(1).getAsDouble();
+            double plon = props.has("lon") ? props.get("lon").getAsDouble()
+                    : feature.getAsJsonObject("geometry")
+                            .getAsJsonArray("coordinates").get(0).getAsDouble();
+            double distanceKm = props.has("distance") ? props.get("distance").getAsDouble() / 1000.0 : 0.0;
 
             IndoorOutdoorType type = classifyIndoorOutdoor(catStrings);
 
@@ -81,6 +96,10 @@ public class GeoApifyPlacesGatewayImpl implements PlacesGateway {
         }
 
         return places;
+    }
+
+    private String firstCategory(List<String> categories) {
+        return categories.isEmpty() ? "(unknown)" : categories.get(0);
     }
 
     private String buildCategoriesParam(Map<String, List<String>> selectedCategories) {
