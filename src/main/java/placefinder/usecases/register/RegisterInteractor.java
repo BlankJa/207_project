@@ -25,7 +25,7 @@ public class RegisterInteractor implements RegisterInputBoundary {
             if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
                 presenter.present(new RegisterOutputData(
                         false,
-                        "Name, email, and password are required."
+                        "Name, email, and password are required to register."
                 ));
                 return;
             }
