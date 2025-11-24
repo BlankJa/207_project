@@ -13,6 +13,9 @@ public class PlanCreationViewModel {
     private String originAddress;
     private boolean weatherUsed;
 
+    // NEW: short natural-language advice shown above plan preview
+    private String weatherAdvice;
+
     private Plan planPreview;
     private boolean planTruncated;
     private Plan lastSavedPlan;
@@ -28,24 +31,68 @@ public class PlanCreationViewModel {
         this.recommendedPlaces = places != null ? new ArrayList<>(places) : new ArrayList<>();
     }
 
-    public String getOriginAddress() { return originAddress; }
-    public void setOriginAddress(String originAddress) { this.originAddress = originAddress; }
+    public String getOriginAddress() {
+        return originAddress;
+    }
 
-    public boolean isWeatherUsed() { return weatherUsed; }
-    public void setWeatherUsed(boolean weatherUsed) { this.weatherUsed = weatherUsed; }
+    public void setOriginAddress(String originAddress) {
+        this.originAddress = originAddress;
+    }
 
-    public Plan getPlanPreview() { return planPreview; }
-    public void setPlanPreview(Plan planPreview) { this.planPreview = planPreview; }
+    public boolean isWeatherUsed() {
+        return weatherUsed;
+    }
 
-    public boolean isPlanTruncated() { return planTruncated; }
-    public void setPlanTruncated(boolean planTruncated) { this.planTruncated = planTruncated; }
+    public void setWeatherUsed(boolean weatherUsed) {
+        this.weatherUsed = weatherUsed;
+    }
 
-    public Plan getLastSavedPlan() { return lastSavedPlan; }
-    public void setLastSavedPlan(Plan lastSavedPlan) { this.lastSavedPlan = lastSavedPlan; }
+    public Plan getPlanPreview() {
+        return planPreview;
+    }
 
-    public String getInfoMessage() { return infoMessage; }
-    public void setInfoMessage(String infoMessage) { this.infoMessage = infoMessage; }
+    public void setPlanPreview(Plan planPreview) {
+        this.planPreview = planPreview;
+    }
 
-    public String getErrorMessage() { return errorMessage; }
-    public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+    public boolean isPlanTruncated() {
+        return planTruncated;
+    }
+
+    public void setPlanTruncated(boolean planTruncated) {
+        this.planTruncated = planTruncated;
+    }
+
+    public Plan getLastSavedPlan() {
+        return lastSavedPlan;
+    }
+
+    public void setLastSavedPlan(Plan lastSavedPlan) {
+        this.lastSavedPlan = lastSavedPlan;
+    }
+
+    public String getInfoMessage() {
+        return infoMessage;
+    }
+
+    public void setInfoMessage(String infoMessage) {
+        this.infoMessage = infoMessage;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+
+    // NEW: weather advice getter/setter
+    public String getWeatherAdvice() {
+        return weatherAdvice;
+    }
+
+    public void setWeatherAdvice(String weatherAdvice) {
+        this.weatherAdvice = weatherAdvice;
+    }
 }

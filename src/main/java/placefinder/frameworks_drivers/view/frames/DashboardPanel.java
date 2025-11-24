@@ -1,8 +1,10 @@
-
 package placefinder.frameworks_drivers.view.frames;
 
 import placefinder.frameworks_drivers.view.components.swing.Button;
 import placefinder.frameworks_drivers.view.components.swing.PanelRound;
+import placefinder.frameworks_drivers.view.components.swing.table.Table;
+import placefinder.frameworks_drivers.view.components.swing.table.TableCellAction;
+import placefinder.frameworks_drivers.view.components.swing.table.RowActionHandler;
 import placefinder.entities.Plan;
 import placefinder.interface_adapters.controllers.DashboardController;
 import placefinder.interface_adapters.viewmodels.DashboardViewModel;
@@ -29,7 +31,7 @@ public class DashboardPanel extends JPanel {
     private JLabel upcomingPlansValue;
     private JLabel lastPlanDateValue;
 
-    private JTable planTable;
+    private Table planTable;                      // <-- use our custom Table
     private DefaultTableModel planTableModel;
     private final List<Plan> planRows = new ArrayList<>();
 
@@ -72,13 +74,12 @@ public class DashboardPanel extends JPanel {
         gbc.insets = new Insets(20, 40, 20, 40);
 
         PanelRound card = new PanelRound();
-        card.setBackground(new Color(250, 250, 250));
+        card.setBackground(new Color(234, 246, 234));
         card.setLayout(new BorderLayout(20, 20));
         card.setBorder(new EmptyBorder(20, 20, 20, 20));
-
         add(card, gbc);
 
-        // Header
+        // ===== Header =====
         JPanel header = new JPanel(new BorderLayout(10, 5));
         header.setOpaque(false);
 
@@ -86,10 +87,10 @@ public class DashboardPanel extends JPanel {
         titlePanel.setOpaque(false);
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
         JLabel title = new JLabel("Dashboard");
-        title.setFont(new Font("sansserif", Font.BOLD, 22));
+        title.setFont(new Font("sansserif", Font.BOLD, 30));
         title.setForeground(new Color(40, 40, 40));
         welcomeLabel = new JLabel("Welcome, Traveler");
-        welcomeLabel.setFont(new Font("sansserif", Font.PLAIN, 14));
+        welcomeLabel.setFont(new Font("sansserif", Font.PLAIN, 18));
         welcomeLabel.setForeground(new Color(90, 90, 90));
         titlePanel.add(title);
         titlePanel.add(Box.createVerticalStrut(2));
@@ -111,7 +112,7 @@ public class DashboardPanel extends JPanel {
 
         card.add(header, BorderLayout.NORTH);
 
-        // Main content
+        // ===== Main content =====
         JPanel main = new JPanel(new BorderLayout(20, 20));
         main.setOpaque(false);
         card.add(main, BorderLayout.CENTER);
@@ -123,8 +124,9 @@ public class DashboardPanel extends JPanel {
         actionsPanel.setBorder(new EmptyBorder(10, 0, 10, 10));
 
         JLabel actionsTitle = new JLabel("Quick actions");
-        actionsTitle.setFont(new Font("sansserif", Font.BOLD, 14));
+        actionsTitle.setFont(new Font("sansserif", Font.BOLD, 18));
         actionsTitle.setForeground(new Color(60, 60, 60));
+        actionsTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         actionsPanel.add(actionsTitle);
         actionsPanel.add(Box.createVerticalStrut(10));
 
@@ -140,7 +142,7 @@ public class DashboardPanel extends JPanel {
 
         Button weatherButton = new Button();
         weatherButton.setText("Weather Advice");
-        styleSecondaryButton(weatherButton);
+        stylePrimaryButton(weatherButton);
         weatherButton.addActionListener(e -> appFrame.showWeatherAdvice());
 
         actionsPanel.add(prefButton);
@@ -179,14 +181,19 @@ public class DashboardPanel extends JPanel {
         plansLabel.setForeground(new Color(50, 50, 50));
         tableCard.add(plansLabel, BorderLayout.NORTH);
 
-        planTableModel = new DefaultTableModel(new Object[] { "Name", "Date", "Location" }, 0) {
+        // 4 columns: Name, Date, Location, Actions
+        planTableModel = new DefaultTableModel(
+                new Object[]{"Name", "Date", "Location", "Actions"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                // Only actions column is editable (to allow button clicks)
+                return column == 3;
             }
         };
-        planTable = new JTable(planTableModel);
-        planTable.setRowHeight(30);
+
+        planTable = new Table();
+        planTable.setModel(planTableModel);
+        planTable.setRowHeight(40);
         planTable.setShowGrid(false);
         planTable.setIntercellSpacing(new Dimension(0, 0));
         planTable.setFillsViewportHeight(true);
@@ -198,37 +205,34 @@ public class DashboardPanel extends JPanel {
 
         JTableHeader headerTable = planTable.getTableHeader();
         headerTable.setReorderingAllowed(false);
-        headerTable.setBackground(new Color(7, 164, 121));
-        headerTable.setForeground(Color.WHITE);
-        headerTable.setFont(new Font("sansserif", Font.BOLD, 13));
 
         JScrollPane scroll = new JScrollPane(planTable);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getViewport().setBackground(Color.WHITE);
         tableCard.add(scroll, BorderLayout.CENTER);
 
-        JPanel tableButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 5));
-        tableButtons.setOpaque(false);
-        Button viewButton = new Button();
-        viewButton.setText("View");
-        styleSecondaryButton(viewButton);
-        viewButton.addActionListener(e -> viewSelectedPlan());
+        // Wire up action column with icons
+        RowActionHandler handler = new RowActionHandler() {
+            @Override
+            public void onEdit(int row) {
+                // ensure selection matches clicked row
+                planTable.getSelectionModel().setSelectionInterval(row, row);
+                viewSelectedPlan();
+            }
 
-        Button deleteButton = new Button();
-        deleteButton.setText("Delete");
-        styleDestructiveButton(deleteButton);
-        deleteButton.addActionListener(e -> deleteSelectedPlan());
+            @Override
+            public void onDelete(int row) {
+                planTable.getSelectionModel().setSelectionInterval(row, row);
+                deleteSelectedPlan();
+            }
+        };
 
-        Button applyButton = new Button();
-        applyButton.setText("Apply Preferences");
-        stylePrimaryButton(applyButton);
-        applyButton.addActionListener(e -> applyPreferencesFromSelectedPlan());
-
-        tableButtons.add(viewButton);
-        tableButtons.add(deleteButton);
-        tableButtons.add(applyButton);
-
-        tableCard.add(tableButtons, BorderLayout.SOUTH);
+        TableCellAction cellAction = new TableCellAction(handler);
+        planTable.getColumnModel().getColumn(3).setCellRenderer(cellAction);
+        planTable.getColumnModel().getColumn(3).setCellEditor(cellAction);
+        planTable.getColumnModel().getColumn(3).setMaxWidth(90);
+        planTable.getColumnModel().getColumn(3).setMinWidth(90);
+        planTable.getColumnModel().getColumn(3).setPreferredWidth(90);
 
         rightPanel.add(tableCard, BorderLayout.CENTER);
 
@@ -244,6 +248,8 @@ public class DashboardPanel extends JPanel {
         btn.setForeground(Color.WHITE);
         btn.setFont(new Font("sansserif", Font.BOLD, 12));
         btn.setPreferredSize(new Dimension(180, 32));
+        btn.setMaximumSize(new Dimension(180, 32));
+        btn.setAlignmentX(Component.LEFT_ALIGNMENT);
     }
 
     private void styleSecondaryButton(Button btn) {
@@ -262,9 +268,9 @@ public class DashboardPanel extends JPanel {
 
     private JLabel createStatCard(JPanel parentRow, String title) {
         PanelRound card = new PanelRound();
-        card.setBackground(new Color(245, 250, 248));
+        card.setBackground(new Color(255, 255, 255));
         card.setLayout(new BorderLayout(5, 5));
-        card.setBorder(new EmptyBorder(10, 10, 10, 10));
+        card.setBorder(new EmptyBorder(15, 15, 15, 15));
 
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(new Font("sansserif", Font.PLAIN, 12));
@@ -300,7 +306,8 @@ public class DashboardPanel extends JPanel {
             planTableModel.addRow(new Object[]{
                     p.getName(),
                     p.getDate(),
-                    p.getOriginAddress()
+                    p.getOriginAddress(),
+                    ""   // Actions column (icons only; value not used)
             });
         }
 
@@ -328,8 +335,10 @@ public class DashboardPanel extends JPanel {
         if (plans.isEmpty()) {
             lastPlanDateValue.setText("-");
         } else {
-            Plan last = plans.get(plans.size() - 1);
-            lastPlanDateValue.setText(last.getDate() != null ? last.getDate().toString() : "-");
+            Plan last = plans.get(0);
+            lastPlanDateValue.setText(
+                    last.getDate() != null ? last.getDate().toString() : "-"
+            );
         }
     }
 

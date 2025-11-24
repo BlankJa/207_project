@@ -43,14 +43,14 @@ public class PreferencesPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        // soft gradient background similar to login/register
-        Graphics2D g2 = (Graphics2D) g.create();
+        // Gradient background
+        Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        Color top = new Color(245, 249, 255);
-        Color bottom = new Color(230, 238, 255);
-        g2.setPaint(new GradientPaint(0, 0, top, 0, getHeight(), bottom));
+        Color c1 = new Color(7, 164, 121);
+        Color c2 = new Color(0, 92, 75);
+        GradientPaint gp = new GradientPaint(0, 0, c1, getWidth(), getHeight(), c2);
+        g2.setPaint(gp);
         g2.fillRect(0, 0, getWidth(), getHeight());
-        g2.dispose();
     }
 
     private void initUI() {
@@ -66,7 +66,7 @@ public class PreferencesPanel extends JPanel {
         gbc.fill = GridBagConstraints.BOTH;
 
         PanelRound card = new PanelRound();
-        card.setBackground(new Color(250, 250, 250));
+        card.setBackground(new Color(234, 246, 234));
         card.setLayout(new BorderLayout(20, 20));
         card.setBorder(new EmptyBorder(20, 20, 20, 20));
         add(card, gbc);
@@ -76,11 +76,11 @@ public class PreferencesPanel extends JPanel {
         header.setOpaque(false);
 
         JLabel title = new JLabel("Preferences");
-        title.setFont(new Font("sansserif", Font.BOLD, 22));
+        title.setFont(new Font("sansserif", Font.BOLD, 28));
         title.setForeground(new Color(40, 40, 40));
 
         JLabel subtitle = new JLabel("Set radius, interests, and favorite locations to personalize your day trips.");
-        subtitle.setFont(new Font("sansserif", Font.PLAIN, 13));
+        subtitle.setFont(new Font("sansserif", Font.PLAIN, 15));
         subtitle.setForeground(new Color(120, 120, 120));
 
         JPanel titleBox = new JPanel();

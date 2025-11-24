@@ -99,7 +99,7 @@ public class AppFrame extends JFrame {
         registerPanel = new RegisterPanel(this, registerController, registerVM);
         dashboardPanel = new DashboardPanel(this, dashboardController, dashboardVM, planDetailsVM);
         preferencesPanel = new PreferencesPanel(this, preferencesController, preferencesVM);
-        planBuilderPanel = new PlanBuilderPanel(this, planCreationController, planCreationVM);
+        planBuilderPanel = new PlanBuilderPanel(this, planCreationController, planCreationVM, weatherAdviceController, weatherAdviceVM);
         weatherAdvicePanel = new WeatherAdvicePanel(this, weatherAdviceController, weatherAdviceVM);
         planDetailsPanel = new PlanDetailsPanel( dashboardController, dashboardVM, planDetailsVM, this);
 

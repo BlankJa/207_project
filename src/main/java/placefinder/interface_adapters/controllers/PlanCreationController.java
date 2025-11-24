@@ -31,6 +31,7 @@ public class PlanCreationController implements
     public void searchPlaces(int userId, String locationText, String date) {
         viewModel.setErrorMessage(null);
         viewModel.setInfoMessage(null);
+        viewModel.setWeatherAdvice(null);
         searchPlacesInteractor.execute(new SearchPlacesInputData(userId, locationText, date));
     }
 
@@ -63,19 +64,55 @@ public class PlanCreationController implements
             viewModel.setRecommendedPlaces(List.of());
             viewModel.setOriginAddress(null);
             viewModel.setWeatherUsed(false);
+            viewModel.setWeatherAdvice(null);
             viewModel.setErrorMessage(outputData.getErrorMessage());
+            viewModel.setInfoMessage(null);
             return;
         }
+
+        // Basic data
         viewModel.setRecommendedPlaces(outputData.getPlaces());
         viewModel.setOriginAddress(outputData.getOriginAddress());
         viewModel.setWeatherUsed(outputData.isWeatherUsed());
         viewModel.setErrorMessage(null);
+
+        // Build a short advice string based on weather + indoor/outdoor balance
+        String adviceText;
+
         if (!outputData.isWeatherUsed()) {
-            viewModel.setInfoMessage("Weather data unavailable. Results are not weather-optimized.");
+            // Weather API failed or not used
+            adviceText = "Weather data unavailable. Results are not weather-optimized.";
+            viewModel.setInfoMessage(adviceText);
         } else {
+            // Weather was used; infer bias from recommended places
+            int indoor = 0;
+            int outdoor = 0;
+
+            for (Place p : outputData.getPlaces()) {
+                if (p.getIndoorOutdoorType() == null) continue;
+                switch (p.getIndoorOutdoorType()) {
+                    case INDOOR -> indoor++;
+                    case OUTDOOR -> outdoor++;
+                    default -> { /* MIXED or others – ignore for bias */ }
+                }
+            }
+
+            String bias;
+            if (indoor > outdoor) {
+                bias = "We are favouring indoor locations based on the forecast.";
+            } else if (outdoor > indoor) {
+                bias = "We are favouring outdoor locations based on the forecast.";
+            } else {
+                bias = "Mix of indoor and outdoor locations based on the forecast.";
+            }
+
+            adviceText = bias + " For detailed temperature and UV advice, use the Weather Advice page on the dashboard.";
             viewModel.setInfoMessage(null);
         }
+
+        viewModel.setWeatherAdvice(adviceText);
     }
+
 
     @Override
     public void present(BuildPlanOutputData outputData) {
@@ -105,5 +142,7 @@ public class PlanCreationController implements
         }
     }
 
-    public PlanCreationViewModel getViewModel() { return viewModel; }
+    public PlanCreationViewModel getViewModel() {
+        return viewModel;
+    }
 }

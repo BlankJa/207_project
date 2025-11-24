@@ -1,4 +1,3 @@
-
 package placefinder.frameworks_drivers.view.frames;
 
 import placefinder.frameworks_drivers.view.components.swing.Button;
@@ -10,6 +9,8 @@ import placefinder.interface_adapters.viewmodels.WeatherAdviceViewModel;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 
 public class WeatherAdvicePanel extends JPanel {
 
@@ -35,7 +36,6 @@ public class WeatherAdvicePanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        // Gradient background to match other panels
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         Color c1 = new Color(7, 164, 121);
@@ -57,22 +57,23 @@ public class WeatherAdvicePanel extends JPanel {
         gbc.insets = new Insets(20, 40, 20, 40);
         gbc.fill = GridBagConstraints.BOTH;
 
+        // --- MAIN CARD (Light Green Background) ---
         PanelRound card = new PanelRound();
-        card.setBackground(new Color(250, 250, 250));
+        card.setBackground(new Color(234, 246, 234));
         card.setLayout(new BorderLayout(20, 20));
         card.setBorder(new EmptyBorder(20, 20, 20, 20));
         add(card, gbc);
 
-        // Header
+        // --- Header ---
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
 
         JLabel title = new JLabel("Weather advice");
-        title.setFont(new Font("sansserif", Font.BOLD, 22));
+        title.setFont(new Font("sansserif", Font.BOLD, 28));
         title.setForeground(new Color(40, 40, 40));
 
         JLabel subtitle = new JLabel("Check the weather and get packing suggestions before you head out.");
-        subtitle.setFont(new Font("sansserif", Font.PLAIN, 12));
+        subtitle.setFont(new Font("sansserif", Font.PLAIN, 15));
         subtitle.setForeground(new Color(90, 90, 90));
 
         JPanel titleBox = new JPanel();
@@ -99,27 +100,38 @@ public class WeatherAdvicePanel extends JPanel {
 
         card.add(header, BorderLayout.NORTH);
 
-        // Center content
+        // --- Center content ---
         JPanel center = new JPanel(new GridBagLayout());
         center.setOpaque(false);
         card.add(center, BorderLayout.CENTER);
 
         GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(5, 5, 5, 5);
-        c.fill = GridBagConstraints.HORIZONTAL;
 
-        // Left side: inputs
+        // =========================================
+        // Left side: Inputs + Fixed Image
+        // =========================================
         PanelRound left = new PanelRound();
         left.setBackground(Color.WHITE);
         left.setLayout(new GridBagLayout());
-        left.setBorder(new EmptyBorder(12, 12, 12, 12));
+        left.setBorder(new EmptyBorder(15, 15, 15, 15));
 
         GridBagConstraints ic = new GridBagConstraints();
-        ic.insets = new Insets(6, 4, 6, 4);
+
         ic.gridx = 0;
         ic.gridy = 0;
         ic.weightx = 1;
         ic.fill = GridBagConstraints.HORIZONTAL;
+        ic.insets = new Insets(0, 0, 15, 2);
+
+        int frameWidth = appFrame.getWidth() > 0 ? appFrame.getWidth() : 1000;
+        int targetImgWidth = (int) (frameWidth * 0.4) - 80;
+        if (targetImgWidth < 250) targetImgWidth = 250;
+
+        FixedImagePanel imagePanel = new FixedImagePanel("/icons/Weather.png", targetImgWidth);
+        left.add(imagePanel, ic);
+
+        ic.insets = new Insets(6, 4, 6, 4);
+        ic.gridy++;
 
         JLabel locLabel = new JLabel("Location");
         locLabel.setFont(new Font("sansserif", Font.BOLD, 13));
@@ -145,8 +157,8 @@ public class WeatherAdvicePanel extends JPanel {
         ic.gridy++;
         ic.weighty = 1;
         ic.anchor = GridBagConstraints.NORTHWEST;
-        JButton spacer = new JButton();
-        spacer.setVisible(false);
+        JPanel spacer = new JPanel();
+        spacer.setOpaque(false);
         left.add(spacer, ic);
 
         c.gridx = 0;
@@ -154,16 +166,19 @@ public class WeatherAdvicePanel extends JPanel {
         c.weightx = 0.4;
         c.weighty = 1;
         c.fill = GridBagConstraints.BOTH;
+        c.insets = new Insets(5, 5, 5, 5);
         center.add(left, c);
 
-        // Right side: output
+        // =========================================
+        // Right side: Output
+        // =========================================
         PanelRound right = new PanelRound();
         right.setBackground(Color.WHITE);
         right.setLayout(new GridBagLayout());
         right.setBorder(new EmptyBorder(12, 12, 12, 12));
 
         GridBagConstraints rc = new GridBagConstraints();
-        rc.insets = new Insets(4, 4, 4, 4);
+        rc.insets = new Insets(5, 5, 5, 5);
         rc.gridx = 0;
         rc.gridy = 0;
         rc.weightx = 1;
@@ -206,14 +221,16 @@ public class WeatherAdvicePanel extends JPanel {
         sc2.setBorder(BorderFactory.createEmptyBorder());
         right.add(sc2, rc);
 
+        // --- RIGHT CARD ALIGNMENT ---
         c.gridx = 1;
         c.gridy = 0;
         c.weightx = 0.6;
         c.weighty = 1;
         c.fill = GridBagConstraints.BOTH;
+        c.insets = new Insets(5, 5, 5, 5);
         center.add(right, c);
 
-        // Bottom row: buttons + error
+        // --- Bottom row ---
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.setOpaque(false);
 
@@ -267,6 +284,40 @@ public class WeatherAdvicePanel extends JPanel {
             errorLabel.setText(" ");
             summaryArea.setText(weatherAdviceVM.getSummary() != null ? weatherAdviceVM.getSummary() : "");
             adviceArea.setText(weatherAdviceVM.getAdvice() != null ? weatherAdviceVM.getAdvice() : "");
+        }
+    }
+
+    private static class FixedImagePanel extends JPanel {
+        private BufferedImage originalImage;
+
+        public FixedImagePanel(String resourcePath, int targetWidth) {
+            setOpaque(false);
+            try {
+                java.net.URL imgUrl = getClass().getResource(resourcePath);
+                if (imgUrl != null) {
+                    originalImage = ImageIO.read(imgUrl);
+
+                    double aspectRatio = (double) originalImage.getHeight() / originalImage.getWidth();
+                    int targetHeight = (int) (targetWidth * aspectRatio);
+
+                    setPreferredSize(new Dimension(targetWidth, targetHeight));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (originalImage != null) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                g2.drawImage(originalImage, 0, 0, getWidth(), getHeight(), null);
+            }
         }
     }
 }

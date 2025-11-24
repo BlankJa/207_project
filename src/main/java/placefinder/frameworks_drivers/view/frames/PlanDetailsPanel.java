@@ -67,7 +67,7 @@ public class PlanDetailsPanel extends JPanel {
         gbc.fill = GridBagConstraints.BOTH;
 
         PanelRound card = new PanelRound();
-        card.setBackground(new Color(250, 250, 250));
+        card.setBackground(new Color(234, 246, 234));
         card.setLayout(new BorderLayout(20, 20));
         card.setBorder(new EmptyBorder(20, 20, 20, 20));
         add(card, gbc);
@@ -77,11 +77,11 @@ public class PlanDetailsPanel extends JPanel {
         header.setOpaque(false);
 
         JLabel title = new JLabel("Plan details");
-        title.setFont(new Font("sansserif", Font.BOLD, 22));
+        title.setFont(new Font("sansserif", Font.BOLD, 28));
         title.setForeground(new Color(40, 40, 40));
 
         JLabel subtitle = new JLabel("Review your itinerary, edit it, or reuse its preferences.");
-        subtitle.setFont(new Font("sansserif", Font.PLAIN, 12));
+        subtitle.setFont(new Font("sansserif", Font.PLAIN, 15));
         subtitle.setForeground(new Color(90, 90, 90));
 
         JPanel titleBox = new JPanel();
