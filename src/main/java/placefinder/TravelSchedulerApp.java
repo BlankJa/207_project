@@ -41,7 +41,7 @@ import placefinder.interface_adapters.controllers.*;
 import placefinder.interface_adapters.viewmodels.*;
 
 // UI (you implement this in frameworks_drivers.ui)
-import placefinder.frameworks_drivers.ui.frames.AppFrame;
+import placefinder.frameworks_drivers.view.frames.AppFrame;
 
 public class TravelSchedulerApp {
 

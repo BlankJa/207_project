@@ -1,4 +1,4 @@
-package placefinder.frameworks_drivers.ui.frames;
+package placefinder.frameworks_drivers.view.frames;
 
 import placefinder.entities.Plan;
 import placefinder.interface_adapters.controllers.*;

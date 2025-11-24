@@ -1,8 +1,8 @@
-package placefinder.frameworks_drivers.ui.frames;
+package placefinder.frameworks_drivers.view.frames;
 
-import com.raven.swing.Button;
-import com.raven.swing.MyTextField;
-import com.raven.swing.PanelRound;
+import placefinder.frameworks_drivers.view.components.swing.Button;
+import placefinder.frameworks_drivers.view.components.swing.MyTextField;
+import placefinder.frameworks_drivers.view.components.swing.PanelRound;
 import placefinder.entities.DayTripExperienceCategories;
 import placefinder.entities.FavoriteLocation;
 import placefinder.interface_adapters.controllers.PreferencesController;

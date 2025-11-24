@@ -1,8 +1,8 @@
-package placefinder.frameworks_drivers.ui.frames;
+package placefinder.frameworks_drivers.view.frames;
 
-import com.raven.swing.Button;
-import com.raven.swing.MyTextField;
-import com.raven.swing.PanelRound;
+import placefinder.frameworks_drivers.view.components.swing.Button;
+import placefinder.frameworks_drivers.view.components.swing.MyTextField;
+import placefinder.frameworks_drivers.view.components.swing.PanelRound;
 import placefinder.entities.Plan;
 import placefinder.entities.PlanStop;
 import placefinder.entities.Place;
@@ -12,8 +12,6 @@ import placefinder.interface_adapters.viewmodels.PlanCreationViewModel;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;

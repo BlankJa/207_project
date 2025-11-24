@@ -1,4 +1,4 @@
-package com.raven.swing;
+package placefinder.frameworks_drivers.view.components.swing;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
