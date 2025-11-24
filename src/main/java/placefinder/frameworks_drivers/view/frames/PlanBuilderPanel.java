@@ -338,7 +338,7 @@ public class PlanBuilderPanel extends JPanel {
     }
 
     private void styleSecondaryButton(Button b) {
-        b.setBackground(new Color(57, 56, 56));
+        b.setBackground(new Color(7, 164, 121));
         b.setForeground(Color.WHITE);
         b.setFont(new Font("sansserif", Font.BOLD, 12));
         b.setPreferredSize(new Dimension(180, 32));
