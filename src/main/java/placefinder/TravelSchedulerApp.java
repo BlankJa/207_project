@@ -2,6 +2,7 @@ package placefinder;
 
 import javax.swing.SwingUtilities;
 
+import placefinder.frameworks_drivers.api.GoogleMapsRouteGatewayImpl;
 import placefinder.frameworks_drivers.database.Database;
 import placefinder.frameworks_drivers.database.SqliteUserGatewayImpl;
 import placefinder.frameworks_drivers.database.SqlitePreferenceGatewayImpl;
@@ -11,12 +12,11 @@ import placefinder.frameworks_drivers.api.OpenCageGeocodingGateway;
 import placefinder.frameworks_drivers.api.GeoApifyPlacesGatewayImpl;
 import placefinder.frameworks_drivers.api.OpenMeteoWeatherGatewayImpl;
 
-import placefinder.usecases.ports.UserGateway;
-import placefinder.usecases.ports.PreferenceGateway;
-import placefinder.usecases.ports.PlanGateway;
-import placefinder.usecases.ports.GeocodingGateway;
-import placefinder.usecases.ports.PlacesGateway;
-import placefinder.usecases.ports.WeatherGateway;
+import placefinder.usecases.computeroute.ComputeRouteInputBoundary;
+import placefinder.usecases.computeroute.ComputeRouteInteractor;
+import placefinder.usecases.computeroute.ComputeRouteOutputBoundary;
+import placefinder.usecases.computeroute.ComputeRouteOutputData;
+import placefinder.usecases.ports.*;
 
 // login & register
 import placefinder.usecases.login.*;
@@ -60,6 +60,7 @@ public class TravelSchedulerApp {
         PlanGateway planGateway = new SqlitePlanGatewayImpl();
         GeocodingGateway geocodingGateway = new OpenCageGeocodingGateway();
         PlacesGateway placesGateway = new GeoApifyPlacesGatewayImpl();
+        RouteGateway routeGateway = new GoogleMapsRouteGatewayImpl();
         WeatherGateway weatherGateway = new OpenMeteoWeatherGatewayImpl();
 
         // ========== VIEW MODELS ==========
@@ -197,6 +198,12 @@ public class TravelSchedulerApp {
             }
         };
 
+        ComputeRouteOutputBoundary computeRoutePresenter = new ComputeRouteOutputBoundary() {
+            @Override
+            public void present(ComputeRouteOutputData data) {
+                // dunno what to do here
+            }
+        };
         BuildPlanOutputBoundary buildPlanPresenter = new BuildPlanOutputBoundary() {
             @Override
             public void present(BuildPlanOutputData outputData) {
@@ -237,6 +244,9 @@ public class TravelSchedulerApp {
                         weatherGateway,
                         searchPlacesPresenter
                 );
+
+        ComputeRouteInputBoundary computeRouteInteractor =
+                new ComputeRouteInteractor(routeGateway, computeRoutePresenter);
 
         BuildPlanInputBoundary buildPlanInteractor =
                 new BuildPlanInteractor(preferenceGateway, geocodingGateway, buildPlanPresenter);
